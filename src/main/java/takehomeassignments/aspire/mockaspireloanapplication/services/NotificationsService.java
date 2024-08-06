@@ -2,6 +2,7 @@ package takehomeassignments.aspire.mockaspireloanapplication.services;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import takehomeassignments.aspire.mockaspireloanapplication.entities.UserEntity;
 import takehomeassignments.aspire.mockaspireloanapplication.enums.NotificationChannel;
@@ -15,6 +16,7 @@ public class NotificationsService {
     private final UserService userService;
 
 
+    @Async
     public void sendNotification(String message, String userId, NotificationChannel channel){
         //Send notification to the user
         switch (channel){
