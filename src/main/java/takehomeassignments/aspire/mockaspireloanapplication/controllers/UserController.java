@@ -5,7 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.NotAcceptableStatusException;
 import org.springframework.web.server.ResponseStatusException;
-import takehomeassignments.aspire.mockaspireloanapplication.api.requests.ApplyLoanRequest;
+import takehomeassignments.aspire.mockaspireloanapplication.api.requests.LoanApplicationRequest;
 import takehomeassignments.aspire.mockaspireloanapplication.api.requests.PayNextInstallmentRequest;
 import takehomeassignments.aspire.mockaspireloanapplication.api.responses.LoanResponseEntity;
 import takehomeassignments.aspire.mockaspireloanapplication.entities.UserEntity;
@@ -37,9 +37,9 @@ public class UserController {
     //Apply for Loan
 
     @PostMapping("/loan")
-    public String applyForLoan(@RequestBody ApplyLoanRequest loanRequest) {
+    public String applyForLoan(@RequestBody LoanApplicationRequest loanRequest, @RequestParam(required = true) String token) {
         try {
-            return userService.applyForLoan(loanRequest);
+            return userService.applyForLoan(loanRequest , token);
         } catch (NotAcceptableStatusException e) {
             throw e;
         } catch (Exception e) {
@@ -48,9 +48,9 @@ public class UserController {
     }
 
     @PostMapping("/payNextInstallment")
-    public boolean payNextInstallment(@RequestBody PayNextInstallmentRequest paymentRequest) {
+    public boolean payNextInstallment(@RequestBody PayNextInstallmentRequest paymentRequest, @RequestParam(required = true) String token) {
         try {
-            userService.payNextInstallment(paymentRequest);
+            userService.payNextInstallment(paymentRequest, token);
             return true;
         } catch (NotAcceptableStatusException e) {
             throw e;
@@ -60,9 +60,9 @@ public class UserController {
     }
 
     @GetMapping("/getLoans/{userId}")
-    public List<LoanResponseEntity> getLoans(@PathVariable String userId) {
+    public List<LoanResponseEntity> getLoans(@PathVariable String userId , @RequestParam(required = true) String token){
         try {
-            return userService.getLoans(userId).stream().map(LoanResponseEntity::mapEntityToResponse).toList();
+            return userService.getLoans(userId, token).stream().map(LoanResponseEntity::mapEntityToResponse).toList();
         } catch (NotAcceptableStatusException e) {
             throw e;
         } catch (Exception e) {
@@ -70,7 +70,19 @@ public class UserController {
         }
     }
 
-    //View Installments
+    @GetMapping("/login/{userId}")
+    public String login(@PathVariable String userId) {
+        try {
+            return userService.login(userId);
+        } catch (NotAcceptableStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Error in login ", e);
+        }
+    }
+
+
+        //View Installments
     //View User Details
 
 }

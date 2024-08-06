@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.ZonedDateTime;
+
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
@@ -33,5 +35,11 @@ public class UserEntity {
 
     @Column
     private Boolean currentlyDefaulted;
+
+    @Column
+    private String token;
+
+    @Column
+    private ZonedDateTime tokenExpiry;
 
 }

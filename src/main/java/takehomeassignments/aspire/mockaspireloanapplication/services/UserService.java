@@ -2,10 +2,12 @@ package takehomeassignments.aspire.mockaspireloanapplication.services;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.NotAcceptableStatusException;
-import takehomeassignments.aspire.mockaspireloanapplication.api.requests.ApplyLoanRequest;
+import org.springframework.web.server.ResponseStatusException;
+import takehomeassignments.aspire.mockaspireloanapplication.api.requests.LoanApplicationRequest;
 import takehomeassignments.aspire.mockaspireloanapplication.api.requests.PayNextInstallmentRequest;
 import takehomeassignments.aspire.mockaspireloanapplication.entities.InstallmentEntity;
 import takehomeassignments.aspire.mockaspireloanapplication.entities.LoanEntity;
@@ -47,7 +49,10 @@ public class UserService {
     }
 
 
-    public String applyForLoan(ApplyLoanRequest loanRequest) throws InsufficientBalanceException {
+    public String applyForLoan(LoanApplicationRequest loanRequest, String token) throws InsufficientBalanceException {
+        if (userRepo.findByIdAndToken(loanRequest.getUserId(), token).orElseThrow(() -> new  ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized Access")).isBefore(ZonedDateTime.now())) {
+            throw new NotAcceptableStatusException("Token is expired please get a new token");
+        }
         UserEntity user = userRepo.findById(loanRequest.getUserId()).orElseThrow();
         if (loanRequest.getTotalAmount() <= 0 || loanRequest.getInterestRate() < 0) {
             log.error("Invalid loan request");
@@ -95,7 +100,7 @@ public class UserService {
         return loan.getId();
     }
 
-    private Float getMathematicalInterestRate(ApplyLoanRequest loanRequest) {
+    private Float getMathematicalInterestRate(LoanApplicationRequest loanRequest) {
         //Calculate interest rate based on the frequency
         return switch (loanRequest.getFrequency()) {
             case MONTHLY -> loanRequest.getInterestRate() / (12 * 100);
@@ -106,7 +111,7 @@ public class UserService {
         };
     }
 
-    private Float getEmiAmount(ApplyLoanRequest loanRequest) {
+    private Float getEmiAmount(LoanApplicationRequest loanRequest) {
         //Formula to calculate EMIs
         //emi = [P x R x (1+R)^N]/[(1+R)^N-1]
         float interestRate = getMathematicalInterestRate(loanRequest);
@@ -115,7 +120,10 @@ public class UserService {
     }
 
     @Transactional
-    public void payNextInstallment(PayNextInstallmentRequest paymentRequest) {
+    public void payNextInstallment(PayNextInstallmentRequest paymentRequest,String token) {
+        if (userRepo.findByIdAndToken(paymentRequest.getUserId(), token).orElseThrow(() -> new  ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized Access")).isBefore(ZonedDateTime.now())) {
+            throw new NotAcceptableStatusException("Token is expired please get a new token");
+        }
         UserEntity user = userRepo.findById(paymentRequest.getUserId()).orElseThrow();
         LoanEntity loan = loanRepo.findById(paymentRequest.getLoanId()).orElseThrow();
         if (!loan.getUser().getId().equals(user.getId())) {
@@ -162,7 +170,7 @@ public class UserService {
                 //Adjust the EMI amount -
                 //Calculate the emi that it would take to borrow this extra amount today for the remaining period of the loan
                 //Reduce all future EMIs by that amount
-                ApplyLoanRequest loanRequest = ApplyLoanRequest.builder()
+                LoanApplicationRequest loanRequest = LoanApplicationRequest.builder()
                         .totalAmount(adjustmentAmount)
                         .interestRate(loan.getInterestRate())
                         .startDate(null)
@@ -188,7 +196,19 @@ public class UserService {
         loanRepo.save(loan);
     }
 
-    public List<LoanEntity> getLoans(String userId) {
+    public List<LoanEntity> getLoans(String userId, String token) {
+        if (userRepo.findByIdAndToken(userId, token).orElseThrow(() -> new  ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized Access")).isBefore(ZonedDateTime.now())) {
+            throw new NotAcceptableStatusException("Token is expired please get a new token");
+        }
         return loanRepo.findAllByUserId(userId);
+    }
+
+    public String login(String userId) {
+        //Assume that this method is called post Authentication and Authorization, so the token is always overridden
+        UserEntity user = userRepo.findById(userId).orElseThrow();
+        user.setToken(UUID.randomUUID().toString());
+        user.setTokenExpiry(ZonedDateTime.now().plusHours(1));
+        userRepo.save(user);
+        return user.getToken();
     }
 }
