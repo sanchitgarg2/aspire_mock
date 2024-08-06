@@ -1,0 +1,398 @@
+{
+	"info": {
+		"_postman_id": "b9dd2eea-4c56-4501-8023-622edba86c78",
+		"name": "Mock Aspire Loan App",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "3610430"
+	},
+	"item": [
+		{
+			"name": "User",
+			"item": [
+				{
+					"name": "Create User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if(pm.response.code == 200)",
+									"pm.environment.set(\"userId\", pm.response.text());",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"sanchitgarg2@gmail.com\",\n    \"name\": \"Sanchit Garg\",\n    \"phoneNumber\": \"8147325346\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/user",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"user"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "ApplyForLoan",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if(pm.response.code == 200)",
+									"pm.environment.set(\"loanId\", pm.response.text());",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "token",
+								"value": "{{userToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\" : \"{{userId}}\",\n    \"totalAmount\": 5000,\n\n    // This interest rate is the annual interest rate. Put it this way to make it easier for you to test. \n    // in the real world I would expect the per period interest rate ( eg for weekly loanRequest.getInterestRate() / (52 * 100);\n    \"interestRate\": 7.2,\n\n    \"frequency\": \"WEEKLY\",\n    \"numberOfInstallments\": 10,\n    \"startDate\": \"2024-03-23T00:00:00.000000000+00\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/user/loan?token={{userToken}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"user",
+								"loan"
+							],
+							"query": [
+								{
+									"key": "token",
+									"value": "{{userToken}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "addRepaymentDetails",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "token",
+								"value": "{{userToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\" : \"{{userId}}\",  \n    \"amount\" : 0.0619363, \n    \"loanId\" : \"{{loanId}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/user/payNextInstallment",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"user",
+								"payNextInstallment"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getLoans",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\" : \"{{userId}}\",  \n    \"amount\" : 2650, \n    \"loanId\" : \"{{loanId}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/user/getLoans/{{userId}}?token={{userToken}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"user",
+								"getLoans",
+								"{{userId}}"
+							],
+							"query": [
+								{
+									"key": "token",
+									"value": "{{userToken}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if(pm.response.code == 200)",
+									"pm.environment.set(\"userToken\", pm.response.text());",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/user/login/{{userId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"user",
+								"login",
+								"{{userId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "AdminUser",
+			"item": [
+				{
+					"name": "createAdminUser",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if(pm.response.code == 200)",
+									"pm.environment.set(\"admin_user_id\", pm.response.text());",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"sanchitgarg2@gmail.com\",\n    \"name\": \"Sanchit Garg\",\n    \"phoneNumber\": \"8147325346\",\n    \"approvalLimit\": 50000\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/adminUser",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"adminUser"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "approveloan",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if(pm.response.code == 200)",
+									"pm.environment.set(\"admin_user_id\", pm.response.text());",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"sanchitgarg2@gmail.com\",\n    \"name\": \"Sanchit Garg\",\n    \"phoneNumber\": \"8147325346\",\n    \"approvalLimit\": 50000\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/admin/approveLoan?loanId={{loanId}}&adminUserId={{admin_user_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"admin",
+								"approveLoan"
+							],
+							"query": [
+								{
+									"key": "loanId",
+									"value": "{{loanId}}"
+								},
+								{
+									"key": "adminUserId",
+									"value": "{{admin_user_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "RejectLoan",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if(pm.response.code == 200)",
+									"pm.environment.set(\"admin_user_id\", pm.response.text());",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"sanchitgarg2@gmail.com\",\n    \"name\": \"Sanchit Garg\",\n    \"phoneNumber\": \"8147325346\",\n    \"approvalLimit\": 50000\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/admin/rejectLoan?loanId={{loanId}}&adminUserId={{admin_user_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"admin",
+								"rejectLoan"
+							],
+							"query": [
+								{
+									"key": "loanId",
+									"value": "{{loanId}}"
+								},
+								{
+									"key": "adminUserId",
+									"value": "{{admin_user_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
