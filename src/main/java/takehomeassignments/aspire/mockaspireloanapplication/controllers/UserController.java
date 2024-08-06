@@ -9,6 +9,7 @@ import takehomeassignments.aspire.mockaspireloanapplication.api.requests.LoanApp
 import takehomeassignments.aspire.mockaspireloanapplication.api.requests.PayNextInstallmentRequest;
 import takehomeassignments.aspire.mockaspireloanapplication.api.responses.LoanResponseEntity;
 import takehomeassignments.aspire.mockaspireloanapplication.entities.UserEntity;
+import takehomeassignments.aspire.mockaspireloanapplication.exceptions.InsufficientBalanceException;
 import takehomeassignments.aspire.mockaspireloanapplication.services.UserService;
 
 import java.util.List;
@@ -40,7 +41,7 @@ public class UserController {
     public String applyForLoan(@RequestBody LoanApplicationRequest loanRequest, @RequestParam(required = true) String token) {
         try {
             return userService.applyForLoan(loanRequest , token);
-        } catch (NotAcceptableStatusException e) {
+        } catch (NotAcceptableStatusException | InsufficientBalanceException e) {
             throw e;
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Loan not applied", e);
