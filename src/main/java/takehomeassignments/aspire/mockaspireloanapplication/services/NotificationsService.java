@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import takehomeassignments.aspire.mockaspireloanapplication.entities.UserEntity;
 import takehomeassignments.aspire.mockaspireloanapplication.enums.NotificationChannel;
 import takehomeassignments.aspire.mockaspireloanapplication.exceptions.UserNotNotifiedError;
 
