@@ -57,7 +57,7 @@ public class NotificationsService {
         return userService.getUserEmail(userId);
     }
 
-    private void sendNotificationViaSMS(String userPhoneNumber, String messsage) throws UserNotNotifiedError {
+    public void sendNotificationViaSMS(String userPhoneNumber, String messsage) throws UserNotNotifiedError {
         try{
             //Manages the integration with the 3P SMS provider
             StringBuilder request = new StringBuilder();
@@ -72,7 +72,7 @@ public class NotificationsService {
         return;
     }
 
-    private void sendNotificationViaEmail(String userEmail, String message) throws UserNotNotifiedError {
+    public void sendNotificationViaEmail(String userEmail, String message) throws UserNotNotifiedError {
         //Manages the integration with the 3P Email provider
         try{
             //Manages the integration with the 3P SMS provider
@@ -88,7 +88,7 @@ public class NotificationsService {
         return;
     }
 
-    private void sendNotificationViaPhoneCall(String userId, String message){
+    public void sendNotificationViaPhoneCall(String userId, String message){
         //Maintain a message queue of requests for phone calls...
         //Include all relevant information in the request, so that the human is best equipped to handle the case
 
@@ -99,6 +99,4 @@ public class NotificationsService {
 
     }
 
-    public void notifyUser(UserEntity user, String your_loan_has_been_approved) {
-    }
 }

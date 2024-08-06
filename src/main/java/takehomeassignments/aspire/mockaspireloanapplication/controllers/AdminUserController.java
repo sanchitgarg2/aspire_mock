@@ -4,14 +4,14 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import takehomeassignments.aspire.mockaspireloanapplication.entities.AdminUser;
-import takehomeassignments.aspire.mockaspireloanapplication.services.AdminUserService;
+import takehomeassignments.aspire.mockaspireloanapplication.services.AdminUserMetaDataService;
 
 @Controller
 @AllArgsConstructor
 @RequestMapping("/adminUser")
 public class AdminUserController {
 
-    AdminUserService adminUserService;
+    AdminUserMetaDataService adminUserMetaDataService;
 
 
     //Perform Caller Auth here
@@ -20,12 +20,12 @@ public class AdminUserController {
     @ResponseBody
     public String createAdminUser(@RequestBody AdminUser request) {
         //Create AdminUser
-        return adminUserService.createAdminUser(request);
+        return adminUserMetaDataService.createAdminUser(request);
     }
 
     @DeleteMapping("/delete/{id}")
     public void deleteAdminUser(@PathVariable String id) {
-        adminUserService.deleteAdminUser(id);
+        adminUserMetaDataService.deleteAdminUser(id);
     }
 
     //Rest of the APIs are probably out of scope for this assignment

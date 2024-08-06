@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import takehomeassignments.aspire.mockaspireloanapplication.enums.PrivilegeEnum;
 
 import java.util.HashMap;
+import java.util.Map;
 
 @Entity
 @AllArgsConstructor
@@ -29,14 +30,19 @@ public class AdminUser {
     private Float approvalLimit;
 
     @Transient
-    HashMap<PrivilegeEnum, Boolean> adminUserPrivileges = new HashMap<>();
+    Map<PrivilegeEnum, Boolean> privileges = new HashMap<>();
 
     @JsonIgnore
     public boolean hasPrivilege(PrivilegeEnum privilege) {
         //This is a function stub.
         //To implement complex privilege checks, this function is the easiest and most maintainable place to do so.
         //Here the privileges are assumed to true, but in a real system, this would be more complex and fetched from a database or a cache
-        return adminUserPrivileges.getOrDefault(privilege , true);
+        return privileges.getOrDefault(privilege , true);
+    }
+
+    @JsonIgnore
+    public void setPrivilege(PrivilegeEnum privilege, Boolean status) {
+        this.privileges.put(privilege, status);
     }
 
 }

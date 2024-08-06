@@ -9,7 +9,7 @@ import java.util.UUID;
 
 @Service
 @AllArgsConstructor
-public class AdminUserService {
+public class AdminUserMetaDataService {
     AdminUserRepository adminUserRepository;
     public String createAdminUser(AdminUser request) {
 
