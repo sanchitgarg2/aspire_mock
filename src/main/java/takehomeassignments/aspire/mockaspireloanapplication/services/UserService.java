@@ -50,7 +50,7 @@ public class UserService {
 
 
     public String applyForLoan(LoanApplicationRequest loanRequest, String token) throws InsufficientBalanceException {
-        if (userRepo.findByIdAndToken(loanRequest.getUserId(), token).orElseThrow(() -> new  ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized Access")).isBefore(ZonedDateTime.now())) {
+        if (userRepo.findByIdAndToken(loanRequest.getUserId(), token).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized Access")).isBefore(ZonedDateTime.now())) {
             throw new NotAcceptableStatusException("Token is expired please get a new token");
         }
         UserEntity user = userRepo.findById(loanRequest.getUserId()).orElseThrow();
@@ -115,13 +115,13 @@ public class UserService {
         //Formula to calculate EMIs
         //emi = [P x R x (1+R)^N]/[(1+R)^N-1]
         float interestRate = getMathematicalInterestRate(loanRequest);
-        return  (float) (loanRequest.getTotalAmount() * interestRate * Math.pow(1 + interestRate, loanRequest.getNumberOfInstallments())) / (float) (Math.pow(1 +interestRate, loanRequest.getNumberOfInstallments()) - 1);
+        return (float) (loanRequest.getTotalAmount() * interestRate * Math.pow(1 + interestRate, loanRequest.getNumberOfInstallments())) / (float) (Math.pow(1 + interestRate, loanRequest.getNumberOfInstallments()) - 1);
 //        return loanRequest.getTotalAmount() + (loanRequest.getTotalAmount() * loanRequest.getInterestRate());
     }
 
     @Transactional
-    public void payNextInstallment(PayNextInstallmentRequest paymentRequest,String token) {
-        if (userRepo.findByIdAndToken(paymentRequest.getUserId(), token).orElseThrow(() -> new  ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized Access")).isBefore(ZonedDateTime.now())) {
+    public void payNextInstallment(PayNextInstallmentRequest paymentRequest, String token) {
+        if (userRepo.findByIdAndToken(paymentRequest.getUserId(), token).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized Access")).isBefore(ZonedDateTime.now())) {
             throw new NotAcceptableStatusException("Token is expired please get a new token");
         }
         UserEntity user = userRepo.findById(paymentRequest.getUserId()).orElseThrow();
@@ -136,68 +136,41 @@ public class UserService {
         }
         int installmentNumber = installmentRepo.findNextInstallmentByLoanId(loan.getId());
         InstallmentEntity installment = installmentRepo.findByLoanIdAndInstallmentNumber(loan.getId(), installmentNumber);
-        if (installment.getStatus() != InstallmentStatus.PENDING) {
+
+        //This is a check to see if the installment is already paid - will be relevant at scale when user agents might replay requests
+        if (installment.getStatus() == InstallmentStatus.PAID) {
             log.error("User " + user.getId() + " trying to pay for an already paid installment " + installment.getId());
             throw new NotAcceptableStatusException("User is trying to pay for an already paid installment");
         }
-        if (installment.getDueAmount() > paymentRequest.getAmount()) {
-            log.error("User " + user.getId() + " trying to pay amount lower than the due amount for installment " + installment.getId());
-            throw new NotAcceptableStatusException("User is trying to pay lower amount than the due amount for this installment");
-        } else {
+
+        if (
+                Objects.equals(installment.getInstallmentNumber(), loan.getNumberOfInstallments())
+                        && !Objects.equals(installment.getDueAmount(), paymentRequest.getAmount())
+        ) {
+            log.error("User " + user.getId() + " trying to pay amount different than the due amount for last installment " + installment.getId());
+            throw new NotAcceptableStatusException("User is trying to pay different amount than the due amount for last installment");
+        }
+        installment.setStatus(InstallmentStatus.PAID);
+        installment.setPaidAt(ZonedDateTime.now());
+        installment.setPaidAmount(paymentRequest.getAmount());
+        installmentRepo.save(installment);
+        if (Objects.equals(installment.getInstallmentNumber(), loan.getNumberOfInstallments())
+                && Objects.equals(installment.getDueAmount(), paymentRequest.getAmount())) {
             //Check if is last installment then amount should match exactly
-            if (
-                    Objects.equals(installment.getInstallmentNumber(), loan.getNumberOfInstallments())
-                    && !Objects.equals(installment.getDueAmount(), paymentRequest.getAmount())
-            ) {
-                log.error("User " + user.getId() + " trying to pay amount different than the due amount for last installment " + installment.getId());
-                throw new NotAcceptableStatusException("User is trying to pay different amount than the due amount for last installment");
-            }
-            installment.setStatus(InstallmentStatus.PAID);
-            installment.setPaidAt(ZonedDateTime.now());
-            installment.setPaidAmount(paymentRequest.getAmount());
-            installmentRepo.save(installment);
-
-            if (Objects.equals(installment.getInstallmentNumber(), loan.getNumberOfInstallments())) {
-                loan.setStatus(LoanStatus.PAID);
-                loanRepo.save(loan);
-                return;
-            }
-
-            if (installment.getDueAmount() < paymentRequest.getAmount()) {
-                log.info("User " + user.getId() + " paid amount higher than the due amount for installment " + installment.getId());
-                float adjustmentAmount = paymentRequest.getAmount() - installment.getDueAmount();
-
-                //Adjust the EMI amount -
-                //Calculate the emi that it would take to borrow this extra amount today for the remaining period of the loan
-                //Reduce all future EMIs by that amount
-                LoanApplicationRequest loanRequest = LoanApplicationRequest.builder()
-                        .totalAmount(adjustmentAmount)
-                        .interestRate(loan.getInterestRate())
-                        .startDate(null)
-                        .frequency(loan.getRepaymentFrequency())
-                        .numberOfInstallments(loan.getNumberOfInstallments() - installment.getInstallmentNumber())
-                        .build();
-                float emiAdjustment = getEmiAmount(loanRequest);
-
-                //get all remaining installments
-                float dueAmountForInstallment = installmentRepo.getDueAmountForInstallment(loan.getId(), installment.getInstallmentNumber() + 1);
-                if(emiAdjustment > dueAmountForInstallment) {
-                    throw new NotAcceptableStatusException("Too much Repayment cannot be accepted for installment " + installment.getId());
-                } else if (emiAdjustment == dueAmountForInstallment) {
-                    //Loan is repaid
-                    installmentRepo.markInstallmentsAsStatus(InstallmentStatus.PAID, loan.getId());
-                    loan.setStatus(LoanStatus.PAID);
-                }
-                else{
-                    installmentRepo.markPendingInstallmentsWithDueAmount(loan.getId(), dueAmountForInstallment - emiAdjustment);
-                }
-            }
+            //Close loan
+            loan.setStatus(LoanStatus.PAID);
+            loanRepo.save(loan);
+            return;
+        }
+        if (!Objects.equals(installment.getDueAmount(), paymentRequest.getAmount())) {
+            float excessPayment = paymentRequest.getAmount() - installment.getDueAmount();
+            this.adjustEmiAmount(excessPayment, installment, loan);
         }
         loanRepo.save(loan);
     }
 
     public List<LoanEntity> getLoans(String userId, String token) {
-        if (userRepo.findByIdAndToken(userId, token).orElseThrow(() -> new  ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized Access")).isBefore(ZonedDateTime.now())) {
+        if (userRepo.findByIdAndToken(userId, token).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized Access")).isBefore(ZonedDateTime.now())) {
             throw new NotAcceptableStatusException("Token is expired please get a new token");
         }
         return loanRepo.findAllByUserId(userId);
@@ -210,5 +183,35 @@ public class UserService {
         user.setTokenExpiry(ZonedDateTime.now().plusHours(1));
         userRepo.save(user);
         return user.getToken();
+    }
+
+    //Using the term EMI here since it is colloquially the accepted one. Technically it should be called Installment Amount
+    public void adjustEmiAmount(float excessPayment, InstallmentEntity installment, LoanEntity loan) {
+
+        //Adjust the EMI amount -
+        //Calculate the emi that it would take to borrow this extra amount today for the remaining period of the loan
+        //Reduce all future EMIs by that amount
+        LoanApplicationRequest loanRequest = LoanApplicationRequest.builder()
+                .totalAmount(Math.abs(excessPayment))
+                .interestRate(loan.getInterestRate())
+                .startDate(null)
+                .frequency(loan.getRepaymentFrequency())
+                .numberOfInstallments(loan.getNumberOfInstallments() - installment.getInstallmentNumber())
+                .build();
+        float InstallmentAmountReducedBy = getEmiAmount(loanRequest) * (excessPayment < 0 ? -1 : 1);
+
+        float regularInstallmentAmount = installmentRepo.getDueAmountForInstallment(loan.getId(), installment.getInstallmentNumber() + 1);
+        if (InstallmentAmountReducedBy > 0) {
+            //If paying too much, we check if it is more than the current value of the entire loan or if it is a full repayment
+            if (InstallmentAmountReducedBy > regularInstallmentAmount) {
+                throw new NotAcceptableStatusException("Too much Repayment cannot be accepted for installment " + installment.getId());
+            } else if (InstallmentAmountReducedBy == regularInstallmentAmount) {
+                //Loan is repaid
+                installmentRepo.markInstallmentsAsStatus(InstallmentStatus.PAID, loan.getId());
+                loan.setStatus(LoanStatus.PAID);
+                return;
+            }
+        }
+        installmentRepo.markPendingInstallmentsWithDueAmount(loan.getId(), regularInstallmentAmount - InstallmentAmountReducedBy);
     }
 }

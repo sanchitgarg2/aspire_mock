@@ -57,9 +57,13 @@ public class UserServiceTest {
         loanRequest.setFrequency(InstallmentFrequency.WEEKLY);
         loanRequest.setNumberOfInstallments(10);
 
+        LoanEntity loanEntity = mock(LoanEntity.class);
+        when(loanEntity.getId()).thenReturn("testLoanId");
+
         when(userRepository.findByIdAndToken(userId, token)).thenReturn(Optional.of(user.getTokenExpiry()));
         when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(user));
         when(loanRepository.getTotalLoansDisbursedToUser(userId, LoanEntity.PENDING_STATUSES)).thenReturn(0f);
+        when(loanRepository.save(any(LoanEntity.class))).thenReturn(loanEntity);
 
         String loanId = userService.applyForLoan(loanRequest, token);
 

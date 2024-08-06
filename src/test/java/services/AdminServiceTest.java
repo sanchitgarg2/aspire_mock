@@ -8,6 +8,7 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.web.server.ResponseStatusException;
 import takehomeassignments.aspire.mockaspireloanapplication.entities.AdminUser;
 import takehomeassignments.aspire.mockaspireloanapplication.entities.LoanEntity;
+import takehomeassignments.aspire.mockaspireloanapplication.entities.UserEntity;
 import takehomeassignments.aspire.mockaspireloanapplication.enums.PrivilegeEnum;
 import takehomeassignments.aspire.mockaspireloanapplication.repositories.AdminUserRepository;
 import takehomeassignments.aspire.mockaspireloanapplication.repositories.InstallmentRepository;
@@ -16,6 +17,7 @@ import takehomeassignments.aspire.mockaspireloanapplication.repositories.UserRep
 import takehomeassignments.aspire.mockaspireloanapplication.services.AdminService;
 import takehomeassignments.aspire.mockaspireloanapplication.services.NotificationsService;
 
+import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.Optional;
 
@@ -56,10 +58,15 @@ public class AdminServiceTest {
         adminUser.setPrivileges(Map.of(PrivilegeEnum.CAN_APPROVE_LOANS, true));
         LoanEntity loan = new LoanEntity();
         loan.setAmount(5000f);
+        loan.setStartDate(ZonedDateTime.now().plusDays(1));
         adminUser.setApprovalLimit(10000f);
+        UserEntity user = mock(UserEntity.class);
+        when(user.getId()).thenReturn("userId");
+        loan.setUser(user);
 
         when(loanRepository.findById(loanId)).thenReturn(Optional.of(loan));
         when(adminUserRepository.findByUserId(adminUserId)).thenReturn(Optional.of(adminUser));
+        when(userRepository.findOneById("userId")).thenReturn(Optional.of(user));
 
         assertTrue(adminService.approveLoan(loanId, adminUserId));
 
@@ -108,7 +115,11 @@ public class AdminServiceTest {
         LoanEntity loan = new LoanEntity();
         loan.setAmount(5000f);
         adminUser.setApprovalLimit(10000f);
+        UserEntity user = mock(UserEntity.class);
+        when(user.getId()).thenReturn("userId");
+        loan.setUser(user);
 
+        when(userRepository.findOneById("userId")).thenReturn(Optional.of(user));
         when(loanRepository.findById(loanId)).thenReturn(Optional.of(loan));
         when(adminUserRepository.findByUserId(adminUserId)).thenReturn(Optional.of(adminUser));
 
@@ -127,6 +138,9 @@ public class AdminServiceTest {
         LoanEntity loan = new LoanEntity();
         loan.setAmount(15000f);
         adminUser.setApprovalLimit(10000f);
+        UserEntity user = mock(UserEntity.class);
+        when(user.getId()).thenReturn("userId");
+        loan.setUser(user);
 
         when(loanRepository.findById(loanId)).thenReturn(Optional.of(loan));
         when(adminUserRepository.findByUserId(adminUserId)).thenReturn(Optional.of(adminUser));
